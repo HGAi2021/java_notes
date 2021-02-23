@@ -216,9 +216,9 @@ docker images
 # 搜索镜像
 docker search 镜像名
 # 下载镜像
-docker pull / docker image pull
+docker pull
 # 删除镜像
-docker rmi / docker image rm
+docker rmi
 ````
 * `docker images` 详解 
 ````
@@ -265,4 +265,185 @@ NAME                DESCRIPTION                                     STARS       
 mysql               MySQL is a widely used, open-source relation…   9500                [OK]             
 mariadb             MariaDB is a community-developed fork of MyS…   3444                [OK]
 ````
+* `docker pull 镜像名[:tag]`详解
+````
+# 下载镜像 docker pull 镜像名[:tag]
+➜  ~ docker pull tomcat:8
+8: Pulling from library/tomcat # 如果不写tag，默认就是latest
+90fe46dd8199: Already exists   # 分层下载： docker image的核心 联合文件系统(不再重复下载，可共用)
+35a4f1977689: Already exists 
+bbc37f14aded: Already exists 
+74e27dc593d4: Already exists 
+93a01fbfad7f: Already exists 
+1478df405869: Pull complete 
+64f0dd11682b: Pull complete 
+68ff4e050d11: Pull complete 
+f576086003cf: Pull complete 
+3b72593ce10e: Pull complete 
+Digest: sha256:0c6234e7ec9d10ab32c06423ab829b32e3183ba5bf2620ee66de866df640a027  # 签名 防伪
+Status: Downloaded newer image for tomcat:8
+docker.io/library/tomcat:8  # 真实地址
+---
+# 版本号要实际存在
+docker pull tomcat:8 
+# 等价于
+docker pull docker.io/library/tomcat:8
+
+docker pull mysql 
+# 等价于
+docker pull docker.io/library/mysql:latest
+````
+* `docker rmi -f` 详解
+````
+# 删除指定的镜像
+➜  ~ docker rmi -f 镜像id 
+➜  ~ docker rmi -f 镜像id 镜像id 镜像id 镜像id
+# 删除全部的镜像
+➜  ~ docker rmi -f $(docker images -aq) 
+````
+
+### 2.3、容器命令
+````
+#  新建容器并启动
+docker run [可选参数] 镜像id
+# 列出所有运行的容器
+docker ps
+# 删除指定容器   
+docker rm 容器id 
+# 启动容器
+docker start 容器id     
+# 重启容器
+docker restart 容器id    
+# 停止当前正在运行的容器 
+docker stop 容器id
+# 强制停止当前容器
+docker kill 容器id 
+````
+* `docker run [可选参数] 镜像id` 详解
+````
+docker run [可选参数] 镜像id 
+# 参书说明
+--name="Name"		# 容器名字 tomcat01 tomcat02 用来区分容器
+-d					# 后台方式运行
+-it 				# 使用交互方式运行，进入容器查看内容
+-p					# 指定容器的端口 -p 8080(宿主机):8080(容器)
+		-p ip:主机端口:容器端口
+		-p 主机端口:容器端口(常用)
+		-p 容器端口
+		容器端口
+-P(大写) 			# 随机指定端
+---
+# 测试、启动并进入容器
+➜  ~ docker run -it 镜像id /bin/bash
+[root@95039813da8d /]# ls
+bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+# 从容器退回主机
+[root@95039813da8d /]# exit 
+exit
+--- 
+
+# 后台启动命令的坑
+➜  ~ docker run -d centos
+a8f922c255859622ac45ce3a535b7a0e8253329be4756ed6e32265d2dd2fac6c
+➜  ~ docker ps           
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+
+# 问题docker ps. 发现centos 停止了
+# 常见的坑，docker容器使用后台运行，就必须要有要一个前台进程，docker发现没有应用，就会自动停止
+# nginx，容器启动后，发现自己没有提供服务，就会立刻停止，就是没有程序了
+````
+* `docker ps` 详解
+````
+# 列出当前正在运行的容器
+docker ps
+  -a, --all             # 查看所有容器 (正在运行和历史运行)
+  -n, --last int        # 显示最近创建的几个容器
+  -q, --quiet           # 只显示容器编号
+
+docker ps -a -n=1;
+# 测试
+➜  ~ docker ps   
+CONTAINER ID        IMAGE                 COMMAND                  CREATED             STATUS              PORTS                    NAMES
+68729e9654d4        portainer/portainer   "/portainer"             14 hours ago        Up About a minute   0.0.0.0:8088->9000/tcp   funny_curie
+d506a017e951        nginx                 "nginx -g 'daemon of…"   15 hours ago        Up 15 hours         0.0.0.0:3344->80/tcp     nginx01
+
+➜  ~ docker ps -a
+CONTAINER ID        IMAGE                 COMMAND                  CREATED             STATUS                       PORTS                    NAMES
+95039813da8d        centos                "/bin/bash"              3 minutes ago       Exited (0) 2 minutes ago                              condescending_pike
+1e46a426a5ba        tomcat                "catalina.sh run"        11 minutes ago      Exited (130) 9 minutes ago                            sweet_gould
+14bc9334d1b2        bf756fb1ae65          "/hello"                 3 hours ago         Exited (0) 3 hours ago                                amazing_stonebraker
+f10d60f473f5        bf756fb1ae65          "/hello"                 3 hours ago         Exited (0) 3 hours ago                                dreamy_germain
+68729e9654d4        portainer/portainer   "/portainer"             14 hours ago        Up About a minute            0.0.0.0:8088->9000/tcp   funny_curie
+677cde5e4f1d        elasticsearch         "/docker-entrypoint.…"   15 hours ago        Exited (143) 8 minutes ago                            elasticsearch
+33eb3f70b4db        tomcat                "catalina.sh run"        15 hours ago        Exited (143) 8 minutes ago                            tomcat01
+d506a017e951        nginx                 "nginx -g 'daemon of…"   15 hours ago        Up 15 hours                  0.0.0.0:3344->80/tcp     nginx01
+24ce2db02e45        centos                "/bin/bash"              16 hours ago        Exited (0) 15 hours ago                               hopeful_faraday
+42267d1ad80b        bf756fb1ae65          "/hello"                 16 hours ago        Exited (0) 16 hours ago                               ecstatic_sutherland
+
+➜  ~ docker ps -aq
+95039813da8d
+1e46a426a5ba
+14bc9334d1b2
+f10d60f473f5
+68729e9654d4
+677cde5e4f1d
+33eb3f70b4db
+d506a017e951
+24ce2db02e45
+42267d1ad80b
+````
+* 退出容器
+````
+# 容器直接退出
+exit
+# 容器不停止退出
+ctrl + P + Q 
+````
+* `docker rm 容器id `详解
+````
+# 删除单个容器 不能删除正在运行的容器
+docker rm 容器id
+# 删除全部容器 即便在运行也可以删除（强制删除）
+docker rm -f $(docker ps -qa)
+docker ps -a -q | xargs docker rm 
+````
+* `docker start 容器id ` 详解
+````
+# 启动容器
+docker start 容器id
+# 重启容器
+docker restart 容器id
+# 停止当前正在运行的容器
+docker stop 容器id
+# 强制停止当前容器
+docker kill 容器id	
+````
+
+### 2.4、查看日志
+``````
+docker logs --help
+Options:
+      --details        Show extra details provided to logs 
+  -f, --follow         Follow log output
+      --since string   Show logs since timestamp (e.g. 2013-01-02T13:23:37) or relative (e.g. 42m for 42 minutes)
+      --tail string    Number of lines to show from the end of the logs (default "all")
+  -t, --timestamps     Show timestamps
+      --until string   Show logs before a timestamp (e.g. 2013-01-02T13:23:37) or relative (e.g. 42m for 42 minutes)
+---
+# -tf		    #显示日志信息（一直更新）
+# --tail number #需要显示日志条数
+
+docker logs -tf --tail 10 正在运行的容器id
+
+# 由于没有日志显示，因此编写一段脚本模拟日志 
+docker run -d 300e315adb2f /bin/sh -c "while true;do echo 6666;sleep 1;done"
+
+``````
+
+
+
+
+
+
+
     
